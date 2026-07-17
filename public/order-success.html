@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Order Placed — Vara Traders</title>
+<link rel="icon" type="image/png" href="/images/logo-icon.png" />
+<link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+<header class="site-header">
+  <div class="container header-row">
+    <a href="/index.html" class="brand">
+      <img src="/images/logo.png" alt="Vara Traders logo" class="brand-mark" />
+      <span class="brand-text"><h1>Vara Traders</h1><span>Indian Groceries</span></span>
+    </a>
+    <nav class="main-nav">
+      <a href="/index.html">Home</a>
+      <a href="/shop.html">Shop</a>
+    </nav>
+    <div class="header-actions"><div id="account-slot"></div></div>
+  </div>
+</header>
+
+<div class="container" style="padding:60px 24px;">
+  <div class="form-card" style="text-align:center;">
+    <div style="font-size:44px;margin-bottom:10px;">✅</div>
+    <h2>Order placed!</h2>
+    <p id="order-id-line" style="color:var(--ledger-soft);margin:10px 0 20px;"></p>
+    <p style="font-size:14px;color:var(--ledger-soft);margin-bottom:24px;">We'll start packing your order right away. You can track its status from your account.</p>
+    <a href="/shop.html" class="btn btn-outline btn-block" style="margin-bottom:10px;">Continue shopping</a>
+    <a href="/account.html" class="btn btn-primary btn-block">View my orders</a>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script src="/js/cart.js"></script>
+<script src="/js/common.js"></script>
+<script>
+const id = new URLSearchParams(window.location.search).get('id');
+if (id) document.getElementById('order-id-line').textContent = `Order #${id}`;
+</script>
+</body>
+</html>

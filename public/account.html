@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>My Account — Vara Traders</title>
+<link rel="icon" type="image/png" href="/images/logo-icon.png" />
+<link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+<header class="site-header">
+  <div class="container header-row">
+    <a href="/index.html" class="brand">
+      <img src="/images/logo.png" alt="Vara Traders logo" class="brand-mark" />
+      <span class="brand-text"><h1>Vara Traders</h1><span>Indian Groceries</span></span>
+    </a>
+    <nav class="main-nav"><a href="/index.html">Home</a><a href="/shop.html">Shop</a></nav>
+    <div class="header-actions">
+      <div id="account-slot"></div>
+      <a href="/cart.html" class="icon-link">🛒 Cart <span class="cart-count">0</span></a>
+    </div>
+  </div>
+</header>
+
+<div class="page-head container">
+  <h2>My orders</h2>
+  <p id="welcome-line"></p>
+</div>
+
+<div class="container" style="padding-bottom:60px;">
+  <div id="orders-root"><div class="spinner"></div></div>
+</div>
+
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-bottom"><span>© 2026 Vara Traders. All rights reserved.</span><span>Weighed with care, since day one.</span></div>
+  </div>
+</footer>
+
+<script src="/js/api.js"></script>
+<script src="/js/cart.js"></script>
+<script src="/js/common.js"></script>
+<script>
+if (!Auth.isLoggedIn()) {
+  window.location.href = '/login.html?redirect=/account.html';
+}
+
+const STATUS_LABEL = {
+  placed: 'Placed', confirmed: 'Confirmed', packed: 'Packed',
+  shipped: 'Shipped', delivered: 'Delivered', cancelled: 'Cancelled',
+};
+
+async function loadOrders() {
+  const user = Auth.getUser();
+  document.getElementById('welcome-line').textContent = `Welcome back, ${user.name}.`;
+
+  const root = document.getElementById('orders-root');
+  try {
+    const { orders } = await Api.myOrders();
+    if (!orders.length) {
+      root.innerHTML = `<div class="empty-state"><h3>No orders yet</h3><p>Once you place an order, it'll show up here.</p><a href="/shop.html" class="btn btn-primary" style="margin-top:12px;">Start shopping</a></div>`;
+      return;
+    }
+    root.innerHTML = orders.map((o) => `
+      <div class="order-card">
+        <div class="order-head">
+          <div>
+            <span class="order-id">Order #${o.id}</span><br/>
+            <span style="font-size:12.5px;color:var(--ledger-soft);">${new Date(o.createdAt).toLocaleString('en-IE')}</span>
+          </div>
+          <span class="status-badge status-${o.status}">${STATUS_LABEL[o.status] || o.status}</span>
+        </div>
+        <div class="order-items">
+          ${o.items.map((i) => `${escapeHtml(i.productName)} (${escapeHtml(i.variantLabel)}) × ${i.qty}`).join(', ')}
+        </div>
+        <div class="summary-row total" style="border-top:1px dashed var(--line);margin-top:10px;">
+          <span>Total (${o.paymentMethod === 'cod' ? 'COD' : 'Online'})</span><span>${formatINR(o.total)}</span>
+        </div>
+      </div>
+    `).join('');
+  } catch (err) {
+    root.innerHTML = `<div class="alert alert-error">${escapeHtml(err.message)}</div>`;
+  }
+}
+
+loadOrders();
+</script>
+</body>
+</html>
