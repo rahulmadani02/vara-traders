@@ -20,6 +20,24 @@ router.get('/products', (req, res) => {
         (p.description || '').toLowerCase().includes(q) ||
         (p.brand || '').toLowerCase().includes(q)
     );
+
+    // Rank matches in tiers so the most relevant results float to the top:
+    //   0 = any WORD in the name starts with the query (e.g. "r" matches
+    //       "Rajma" and also "Basmati Rice" via its second word "Rice")
+    //   1 = the query appears somewhere else in the name
+    //   2 = only matched via description/brand
+    function rankOf(product) {
+      const nameLower = product.name.toLowerCase();
+      const words = nameLower.split(/\s+/);
+      if (words.some((w) => w.startsWith(q))) return 0;
+      if (nameLower.includes(q)) return 1;
+      return 2;
+    }
+    rows.sort((a, b) => {
+      const rankDiff = rankOf(a) - rankOf(b);
+      if (rankDiff !== 0) return rankDiff;
+      return a.name.localeCompare(b.name);
+    });
   }
 
   const withMinPrice = rows.map((p) => {

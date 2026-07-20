@@ -113,9 +113,24 @@ function initLiveSearch() {
     const input = form.querySelector('input[name="search"]');
     if (!input) return;
 
+    input.setAttribute('autocomplete', 'off');
+
+    // Attached directly to <body> with fixed positioning computed in JS —
+    // this guarantees it renders on top of everything else on the page,
+    // no matter what stacking/overflow context the search bar sits inside.
     const dropdown = document.createElement('div');
     dropdown.className = 'search-suggestions';
-    form.appendChild(dropdown);
+    dropdown.style.position = 'fixed';
+    dropdown.style.zIndex = '99999';
+    dropdown.style.display = 'none';
+    document.body.appendChild(dropdown);
+
+    function positionDropdown() {
+      const rect = input.getBoundingClientRect();
+      dropdown.style.left = rect.left + 'px';
+      dropdown.style.top = rect.bottom + 6 + 'px';
+      dropdown.style.width = rect.width + 'px';
+    }
 
     let debounceTimer = null;
     let currentQuery = '';
@@ -123,51 +138,53 @@ function initLiveSearch() {
     input.addEventListener('input', () => {
       const query = input.value.trim();
       clearTimeout(debounceTimer);
-      if (query.length < 2) {
-        dropdown.classList.remove('open');
+      if (query.length < 1) {
+        dropdown.style.display = 'none';
         return;
       }
-      // Wait a beat after typing stops before hitting the API, so we're not
-      // firing a request on every single keystroke.
       debounceTimer = setTimeout(() => runSearch(query), 250);
     });
+
+    window.addEventListener('resize', positionDropdown);
+    window.addEventListener('scroll', positionDropdown, true);
 
     async function runSearch(query) {
       currentQuery = query;
       try {
         const { products } = await Api.getProducts({ search: query });
-        // Guard against a slower earlier request overwriting a newer one.
         if (currentQuery !== query) return;
 
         if (!products.length) {
           dropdown.innerHTML = `<div class="search-suggestion-empty">No products match "${escapeHtml(query)}"</div>`;
-          dropdown.classList.add('open');
-          return;
+        } else {
+          const top = products.slice(0, 6);
+          dropdown.innerHTML = top.map((p) => `
+            <a href="/product.html?slug=${p.slug}" class="search-suggestion-item">
+              <span>
+                <span class="name">${escapeHtml(p.name)}</span><br/>
+                <span class="cat">${escapeHtml(p.category.replace('-', ' '))}</span>
+              </span>
+              <span class="price">${p.onSale ? formatINR(p.discountedMinPrice) : formatINR(p.minPrice)}</span>
+            </a>
+          `).join('') + `<a href="/shop.html?search=${encodeURIComponent(query)}" class="search-suggestion-viewall">See all ${products.length} results →</a>`;
         }
-
-        const top = products.slice(0, 6);
-        dropdown.innerHTML = top.map((p) => `
-          <a href="/product.html?slug=${p.slug}" class="search-suggestion-item">
-            <span>
-              <span class="name">${escapeHtml(p.name)}</span><br/>
-              <span class="cat">${escapeHtml(p.category.replace('-', ' '))}</span>
-            </span>
-            <span class="price">${p.onSale ? formatINR(p.discountedMinPrice) : formatINR(p.minPrice)}</span>
-          </a>
-        `).join('') + `<a href="/shop.html?search=${encodeURIComponent(query)}" class="search-suggestion-viewall">See all ${products.length} results →</a>`;
-        dropdown.classList.add('open');
-      } catch {
-        dropdown.classList.remove('open');
+        positionDropdown();
+        dropdown.style.display = 'block';
+      } catch (err) {
+        dropdown.style.display = 'none';
       }
     }
 
-    // Close the dropdown when clicking outside the search form.
     document.addEventListener('click', (e) => {
-      if (!form.contains(e.target)) dropdown.classList.remove('open');
+      if (!form.contains(e.target) && !dropdown.contains(e.target)) {
+        dropdown.style.display = 'none';
+      }
     });
-    // Re-open on focus if there's already a query with results shown.
     input.addEventListener('focus', () => {
-      if (input.value.trim().length >= 2 && dropdown.innerHTML) dropdown.classList.add('open');
+      if (input.value.trim().length >= 1 && dropdown.innerHTML) {
+        positionDropdown();
+        dropdown.style.display = 'block';
+      }
     });
   });
 }
