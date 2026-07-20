@@ -6,7 +6,11 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "backup": "node src/db/backup.js",
-    "restore": "node src/db/restore.js"
+    "restore": "node src/db/restore.js",
+    "start": "node src/server.js",
+    "client:install": "cd client && npm install",
+    "client:dev": "cd client && npm run dev",
+    "client:build": "cd client && npm run build"
   },
   "keywords": [],
   "author": "",

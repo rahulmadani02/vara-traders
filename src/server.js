@@ -28,17 +28,23 @@ app.use('/api/admin', adminRoutes);
 
 app.get('/api/health', (_req, res) => res.json({ ok: true, time: new Date().toISOString() }));
 
-// Serve the frontend (we'll build these HTML/CSS/JS files in the next steps)
-app.use(express.static(path.join(__dirname, '..', 'public')));
+// rahul: frontend is now the React app (client/) — Express only serves its
+// production build plus the /images folder (photos aren't part of the
+// client bundle, so they stay served straight from public/images).
+app.use('/images', express.static(path.join(__dirname, '..', 'public', 'images')));
+const clientDist = path.join(__dirname, '..', 'client', 'dist');
+app.use(express.static(clientDist));
 
 // Fallback 404 for unknown API routes (keep this after static + routes)
 app.use('/api', (_req, res) => res.status(404).json({ error: 'Not found.' }));
 
-// Fallback 404 for any other unmatched page request (not API, not a real
-// static file) — serve our branded 404 page instead of Express's default
-// "Cannot GET ..." error.
-app.use((req, res) => {
-  res.status(404).sendFile(path.join(__dirname, '..', 'public', '404.html'));
+// Any other GET request (not /api, not a real static file) is a client-side
+// route — hand it to the React app so react-router can render it (including
+// its own not-found page). Express 5's path-to-regexp rejects a bare '*'
+// pattern, so this uses app.use (no path) instead, same as the old 404
+// fallback did.
+app.use((_req, res) => {
+  res.sendFile(path.join(clientDist, 'index.html'));
 });
 
 // Central error handler
